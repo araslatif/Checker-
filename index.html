@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Number Records</title>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--tx:#1b2430;--mut:#6b7788;--pri:#2563eb;--wa:#25d366;--bd:#e2e7ee;--del:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#10151c;--card:#1a212b;--tx:#e8edf3;--mut:#93a0b2;--bd:#2a3340}}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,Arial,sans-serif;background:var(--bg);color:var(--tx);padding:12px}
+.wrap{max-width:560px;margin:auto}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+h1{font-size:20px;margin:4px 0 12px}
+h2{font-size:16px;margin:0}
+.row{display:flex;gap:8px}
+input,select{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:12px;width:100%}
+button{font:inherit;border:0;border-radius:10px;padding:12px 16px;color:#fff;background:var(--pri);font-weight:600;cursor:pointer}
+button.wa{background:var(--pri);color:#fff}
+button.gray{background:var(--mut)}
+button.dots{background:none;color:var(--tx);font-size:24px;line-height:1;padding:4px 10px}
+.btns{display:flex;gap:8px;margin-top:10px}
+.btns button{flex:1}
+.sub{color:var(--mut);font-size:13px;margin-top:2px}
+.sum{display:flex;justify-content:space-between;color:var(--mut);font-size:14px;margin:10px 0}
+.sum b{color:var(--tx)}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--bd)}
+li .n{font-size:18px;font-weight:700;flex:1}
+li .d{color:var(--mut);font-size:12px;text-align:right}
+li .x{background:none;color:var(--del);padding:4px 8px;font-size:18px}
+.idx{color:var(--mut);width:28px;font-size:13px}
+.empty{color:var(--mut);text-align:center;padding:18px 0}
+.mkt{display:block;font-size:13px;color:var(--mut);font-weight:500}
+.amt{display:block;font-size:13px;color:#16a34a;font-weight:600}
+hr{border:0;border-top:1px solid var(--bd);margin:12px 0}
+#msg{color:var(--mut);font-size:13px;min-height:18px;margin-top:8px}
+/* calendar modal */
+.ovl{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:14px;z-index:9}
+.ovl.on{display:flex}
+.modal{background:var(--card);border-radius:16px;padding:14px;width:100%;max-width:380px;max-height:95vh;overflow:auto}
+.seg{display:flex;gap:6px;margin-bottom:10px}
+.seg button{flex:1;background:var(--bg);color:var(--tx);border:1px solid var(--bd);padding:9px}
+.seg button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.nav button{background:var(--bg);color:var(--tx);padding:6px 14px;font-size:18px}
+.nav b{font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.grid .wd{font-size:11px;color:var(--mut);padding:4px 0}
+.grid button{background:none;color:var(--tx);padding:9px 0;font-weight:500;position:relative}
+.grid button.sel{background:var(--pri);color:#fff}
+.grid button.dot::after{content:"";position:absolute;bottom:3px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--wa)}
+.grid button.today{outline:1px solid var(--pri)}
+.hint{color:var(--mut);font-size:12px;margin:8px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="row" style="align-items:center;justify-content:space-between">
+    <div><h1 style="margin:4px 0 0">📋 Number Records</h1><div class="sub" id="who"></div></div>
+    <button class="dots" id="gear" title="Settings">⚙</button>
+  </div>
+
+  <div class="card" style="margin-top:10px">
+    <div class="row">
+      <input id="num" type="number" inputmode="decimal" step="any" placeholder="Enter a number" autofocus>
+      <button id="add">Add</button>
+    </div>
+    <div id="msg"></div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="align-items:center">
+      <div style="flex:1"><h2 id="title">Today</h2><div class="sub" id="sub"></div></div>
+      <button class="dots" id="menu" title="History">⋮</button>
+    </div>
+    <div class="sum"><span>Records: <b id="cnt">0</b></span><span id="moneyBox">Total money: <b id="tot">0</b></span></div>
+    <ul id="list"></ul>
+    <div class="btns">
+      <button id="csv" class="gray">⬇ Export CSV</button>
+      <button id="wa" class="wa">📤 Share</button>
+    </div>
+  </div>
+</div>
+
+<div id="sov" class="ovl">
+  <div class="modal">
+    <h2 style="margin-bottom:10px">⚙ Settings</h2>
+    <label class="sub" for="uname">Your name (added to every CSV file)</label>
+    <input id="uname" type="text" placeholder="Enter your name" autocomplete="name" style="margin:6px 0 12px">
+    <hr>
+    <div class="sub" style="margin-bottom:6px">Import invoices (CSV)</div>
+    <input id="ifile" type="file" accept=".csv,text/csv,text/plain">
+    <div id="imap" style="display:none;margin-top:8px">
+      <label class="sub">Invoice number column</label><select id="cInv"></select>
+      <label class="sub" style="display:block;margin-top:6px">Total money column</label><select id="cAmt"></select>
+      <label class="sub" style="display:block;margin-top:6px">Market name column</label><select id="cName"></select>
+      <button id="idoit" style="width:100%;margin-top:8px">Import</button>
+    </div>
+    <div class="sub" id="istat" style="margin:8px 0"></div>
+    <button class="gray" id="iclear" style="width:100%;margin-bottom:12px">Clear imported invoices</button>
+    <div class="btns"><button class="gray" id="sclose">Close</button><button id="ssave">Save</button></div>
+  </div>
+</div>
+
+<div id="ov" class="ovl">
+  <div class="modal">
+    <div class="seg"><button id="mRange" class="on">Range</button><button id="mMulti">Multiple dates</button></div>
+    <div class="nav"><button id="prev">‹</button><b id="mon"></b><button id="next">›</button></div>
+    <div class="grid" id="cal"></div>
+    <div class="hint" id="hint"></div>
+    <div class="btns" style="margin-top:6px">
+      <button class="gray" id="qToday">Today</button>
+      <button class="gray" id="q7">Last 7 days</button>
+    </div>
+    <div class="btns">
+      <button class="gray" id="cancel">Cancel</button>
+      <button id="apply">Apply</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY = 'number_records_v1';
+let records = [];
+try { records = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { records = []; }
+
+/* ---------- Invoices (imported CSV): invoice number -> total money ---------- */
+const IKEY = 'number_records_invoices';
+let inv = {};
+try { inv = JSON.parse(localStorage.getItem(IKEY)) || {}; } catch (e) { inv = {}; }
+const NMKEY = 'number_records_invnames';
+let invName = {};
+try { invName = JSON.parse(localStorage.getItem(NMKEY)) || {}; } catch (e) { invName = {}; }
+const nameOf = r => invName[key(r.value)] || '';
+const has = k => Object.prototype.hasOwnProperty.call(inv, k);
+const digits = s => String(s).replace(/[٠-٩]/g, d => d.charCodeAt(0) - 1632).replace(/[۰-۹]/g, d => d.charCodeAt(0) - 1776);
+const key = v => { const s = digits(v).trim(); return /^\d+$/.test(s) ? s.replace(/^0+(?=\d)/, '') : s.toLowerCase(); };
+const toNum = v => { const n = parseFloat(digits(v).replace(/٫/g, '.').replace(/[٬,\s]/g, '').replace(/[^\d.\-]/g, '')); return isNaN(n) ? null : n; };
+const fmt = n => Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+const amtOf = r => { const k = key(r.value); return has(k) ? inv[k] : ''; };
+const esc = t => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function parseCSV(text) {
+  text = text.replace(/^\uFEFF/, '');
+  const first = text.split(/\r?\n/, 1)[0];
+  const delim = [',', ';', '\t'].sort((a, b) => first.split(b).length - first.split(a).length)[0];
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i+1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === delim) { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i+1] === '\n') i++; row.push(cell); cell = ''; rows.push(row); row = []; }
+    else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim() !== ''));
+}
+
+const $ = id => document.getElementById(id);
+const p2 = n => String(n).padStart(2, '0');
+const dateStr = d => `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+const timeStr = d => `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const todayStr = () => dateStr(new Date());
+
+let sel = [todayStr()];   // dates currently shown (default: today only)
+
+function save() { try { localStorage.setItem(KEY, JSON.stringify(records)); } catch (e) {} }
+function shown() { return records.filter(r => sel.includes(r.date)); }
+
+function label() {
+  if (sel.length === 1) return sel[0] === todayStr() ? ['Today', sel[0]] : [sel[0], ''];
+  const s = [...sel].sort();
+  const contiguous = (parse(s[s.length-1]) - parse(s[0])) / 864e5 + 1 === s.length;
+  return [contiguous ? `${s[0]} → ${s[s.length-1]}` : `${s.length} selected days`, `${s.length} days`];
+}
+
+function render() {
+  const rows = shown();
+  const [t, st] = label();
+  $('title').textContent = t; $('sub').textContent = st;
+  const ul = $('list');
+  ul.innerHTML = '';
+  if (!rows.length) ul.innerHTML = '<div class="empty">No records</div>';
+  [...rows].reverse().forEach((r, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="idx">${rows.length - i}</span><span class="n"><span class="v"></span><span class="mkt"></span><span class="amt"></span></span>
+      <span class="d">${r.date}<br>${r.time}</span><button class="x" title="Delete">✕</button>`;
+    li.querySelector('.v').textContent = r.value;
+    const mk = nameOf(r); if (mk) li.querySelector('.mkt').textContent = '🏪 ' + mk;
+    const am = amtOf(r); if (am !== '') li.querySelector('.amt').textContent = '💰 ' + fmt(am);
+    li.querySelector('.x').onclick = () => {
+      if (confirm('Delete this record?')) { records = records.filter(x => x.id !== r.id); save(); render(); }
+    };
+    ul.appendChild(li);
+  });
+  $('cnt').textContent = rows.length;
+  const seen = new Set(); let money = 0;
+  rows.forEach(r => { const k = key(r.value); if (has(k) && !seen.has(k)) { seen.add(k); money += inv[k]; } });
+  $('tot').textContent = fmt(money);
+}
+
+function add() {
+  const v = $('num').value.trim();
+  if (v === '' || isNaN(Number(v))) { $('msg').textContent = 'Please enter a valid number.'; return; }
+  const now = new Date();
+  records.push({ id: now.getTime() + Math.random(), value: v, date: dateStr(now), time: timeStr(now) });
+  save();
+  $('num').value = '';
+  if (!sel.includes(todayStr())) sel = [todayStr()];
+  $('msg').textContent = 'Added ✓';
+  render();
+  $('num').focus();
+}
+
+/* ---------- Calendar picker ---------- */
+let tmp = new Set(), mode = 'range', rStart = null, cy, cm;
+
+function openCal() {
+  tmp = new Set(sel); rStart = null;
+  const f = parse([...sel].sort()[0]); cy = f.getFullYear(); cm = f.getMonth();
+  $('ov').classList.add('on'); renderCal();
+}
+function renderCal() {
+  const has = new Set(records.map(r => r.date));
+  $('mon').textContent = new Date(cy, cm, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const g = $('cal'); g.innerHTML = '';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(w => g.insertAdjacentHTML('beforeend', `<div class="wd">${w}</div>`));
+  const first = new Date(cy, cm, 1).getDay(), n = new Date(cy, cm + 1, 0).getDate();
+  for (let i = 0; i < first; i++) g.appendChild(document.createElement('span'));
+  for (let d = 1; d <= n; d++) {
+    const ds = `${cy}-${p2(cm+1)}-${p2(d)}`;
+    const b = document.createElement('button');
+    b.textContent = d;
+    if (tmp.has(ds)) b.classList.add('sel');
+    if (has.has(ds)) b.classList.add('dot');
+    if (ds === todayStr()) b.classList.add('today');
+    b.onclick = () => pick(ds);
+    g.appendChild(b);
+  }
+  $('hint').textContent = (mode === 'range'
+    ? (rStart ? 'Now tap the end date.' : 'Tap a start date, then an end date.')
+    : 'Tap dates to select or unselect them.') + ' Green dot = has records.';
+}
+function fill(a, b) {
+  let s = parse(a), e = parse(b);
+  if (s > e) [s, e] = [e, s];
+  const out = new Set();
+  for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) out.add(dateStr(d));
+  return out;
+}
+function pick(ds) {
+  if (mode === 'multi') { tmp.has(ds) ? tmp.delete(ds) : tmp.add(ds); }
+  else if (!rStart) { tmp = new Set([ds]); rStart = ds; }
+  else { tmp = fill(rStart, ds); rStart = null; }
+  renderCal();
+}
+function setMode(m) {
+  mode = m; rStart = null;
+  $('mRange').classList.toggle('on', m === 'range');
+  $('mMulti').classList.toggle('on', m === 'multi');
+  renderCal();
+}
+$('menu').onclick = openCal;
+$('mRange').onclick = () => setMode('range');
+$('mMulti').onclick = () => setMode('multi');
+$('prev').onclick = () => { cm--; if (cm < 0) { cm = 11; cy--; } renderCal(); };
+$('next').onclick = () => { cm++; if (cm > 11) { cm = 0; cy++; } renderCal(); };
+$('qToday').onclick = () => { tmp = new Set([todayStr()]); rStart = null; renderCal(); };
+$('q7').onclick = () => { const e = new Date(), s = new Date(); s.setDate(s.getDate() - 6); tmp = fill(dateStr(s), dateStr(e)); rStart = null; renderCal(); };
+$('cancel').onclick = () => $('ov').classList.remove('on');
+$('apply').onclick = () => {
+  sel = tmp.size ? [...tmp].sort() : [todayStr()];
+  $('ov').classList.remove('on'); render();
+};
+
+/* ---------- Export / share ---------- */
+const NKEY = 'number_records_name';
+try { $('uname').value = localStorage.getItem(NKEY) || ''; } catch (e) {}
+function showWho() { const n = $('uname').value.trim(); $('who').textContent = n ? '👤 ' + n : 'Set your name in ⚙ Settings'; }
+function saveName() { try { localStorage.setItem(NKEY, $('uname').value.trim()); } catch (e) {} showWho(); }
+$('uname').addEventListener('input', saveName);
+$('uname').addEventListener('keydown', e => { if (e.key === 'Enter') { saveName(); $('sov').classList.remove('on'); } });
+$('gear').onclick = () => { $('sov').classList.add('on'); $('uname').focus(); };
+$('ssave').onclick = $('sclose').onclick = () => { saveName(); $('sov').classList.remove('on'); };
+showWho();
+
+let pending = null;
+function istat() {
+  const n = Object.keys(inv).length;
+  $('istat').textContent = n ? `${n} invoices loaded` : 'No invoices imported yet';
+  $('moneyBox').style.display = n ? '' : 'none';
+}
+$('ifile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rows = parseCSV(await f.text()), data = rows.slice(1);
+  if (!data.length) { $('imap').style.display = 'none'; $('istat').textContent = 'This file has headers only - no invoice rows found.'; return; }
+  pending = data;
+  const H = rows[0].map(h => h.trim());
+  const opts = H.map((h, i) => `<option value="${i}">${i + 1}. ${esc(h)}  (${esc((data[0][i] || '').trim().slice(0, 20))})</option>`).join('');
+  $('cInv').innerHTML = opts; $('cAmt').innerHTML = opts; $('cName').innerHTML = '<option value="-1">(none)</option>' + opts;
+  // Invoice number = 'پسووڵە' (the number you type), money = 'گشتی د_ع' (IQD total)
+  let a = H.indexOf('پسووڵە');
+  let b = H.indexOf('گشتی د_ع'); if (b < 0) b = H.findIndex(h => h.replace(/\s+/g, '') === 'گشتید_ع');
+  const auto = a >= 0 && b >= 0;
+  if (a < 0) a = H.indexOf('invoiceNumberData'); if (a < 0) a = 0;
+  if (b < 0) b = H.indexOf('گشتی'); if (b < 0) b = Math.max(0, H.length - 1);
+  // Market name = the LAST 'بازرگان' column (the first one is just an ID)
+  const c = H.lastIndexOf('بازرگان');
+  $('cInv').value = a; $('cAmt').value = b; $('cName').value = c;
+  if (auto) { doImport(); return; }   // known file layout: import straight away
+  $('imap').style.display = '';
+  $('istat').textContent = `${data.length} rows found. Check the two columns, then tap Import.`;
+};
+$('idoit').onclick = doImport;
+function doImport() {
+  const ci = +$('cInv').value, ca = +$('cAmt').value, cn = +$('cName').value; let n = 0;
+  pending.forEach(r => { const k = key(r[ci] || ''), a = toNum(r[ca] || ''); if (k && a !== null) { inv[k] = a; n++; if (cn >= 0 && (r[cn] || '').trim()) invName[k] = r[cn].trim(); } });
+  let saved = true;
+  try { localStorage.setItem(IKEY, JSON.stringify(inv)); localStorage.setItem(NMKEY, JSON.stringify(invName)); } catch (e) { saved = false; }
+  $('imap').style.display = 'none'; $('ifile').value = ''; pending = null;
+  istat(); $('istat').textContent += ` (${n} read from file)` + (saved ? '' : ' - too large to save on this device');
+  render();
+}
+$('iclear').onclick = () => {
+  if (confirm('Remove all imported invoices?')) { inv = {}; invName = {}; try { localStorage.removeItem(IKEY); localStorage.removeItem(NMKEY); } catch (e) {} istat(); render(); }
+};
+istat();
+const csvCell = s => /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+
+function buildCsv() {
+  const rows = shown();
+  const person = $('uname').value.trim();
+  const lines = ['Name,No,Number,Market,Amount,Date,Time'];
+  rows.forEach((r, i) => lines.push(`${csvCell(person)},${i+1},${r.value},${csvCell(nameOf(r))},${amtOf(r)},${r.date},${r.time}`));
+  const now = new Date();
+  const safe = person.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_');
+  const name = `${safe ? safe + '_' : ''}numbers_${dateStr(now)}_${p2(now.getHours())}-${p2(now.getMinutes())}-${p2(now.getSeconds())}.csv`;
+  const text = '\uFEFF' + lines.join('\r\n');
+  return { rows, name, text, blob: new Blob([text], { type: 'text/csv' }) };
+}
+function download(c) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(c.blob);
+  a.download = c.name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+$('csv').onclick = () => {
+  const c = buildCsv();
+  if (!c.rows.length) { $('msg').textContent = 'Nothing to export.'; return; }
+  download(c);
+  $('msg').textContent = 'Saved: ' + c.name;
+};
+$('wa').onclick = async () => {
+  const c = buildCsv();
+  if (!c.rows.length) { $('msg').textContent = 'Nothing to share.'; return; }
+  const file = new File([c.blob], c.name, { type: 'text/csv' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: c.name });   // opens the phone's share sheet (WhatsApp, Telegram, Email, ...)
+      return;
+    }
+  } catch (e) { if (e.name === 'AbortError') return; }
+  download(c);
+  $('msg').textContent = 'Sharing files is not supported here. CSV saved: ' + c.name;
+};
+
+$('add').onclick = add;
+$('num').addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+render();
+</script>
+</body>
+</html>
