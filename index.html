@@ -22,8 +22,14 @@ button.dots{background:none;color:var(--tx);font-size:24px;line-height:1;padding
 .btns{display:flex;gap:8px;margin-top:10px}
 .btns button{flex:1}
 .sub{color:var(--mut);font-size:13px;margin-top:2px}
-.sum{display:flex;justify-content:space-between;color:var(--mut);font-size:14px;margin:10px 0}
-.sum b{color:var(--tx)}
+.sum{display:flex;justify-content:space-between;align-items:flex-end;color:var(--mut);font-size:14px;margin:12px 0}
+.sum b{display:block;color:var(--tx);font-size:26px;line-height:1.15}
+#moneyBox{text-align:right}
+#moneyBox b{font-size:36px;color:#16a34a}
+button.danger{background:var(--del)}
+button.rs{padding:8px 10px;font-size:13px}
+.badge{font-size:11px;background:var(--del);color:#fff;border-radius:9px;padding:1px 6px;margin-left:2px;vertical-align:top}
+.badge:empty{display:none}
 ul{list-style:none;margin:0;padding:0}
 li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--bd)}
 li .n{font-size:18px;font-weight:700;flex:1}
@@ -58,7 +64,7 @@ hr{border:0;border-top:1px solid var(--bd);margin:12px 0}
 <div class="wrap">
   <div class="row" style="align-items:center;justify-content:space-between">
     <div><h1 style="margin:4px 0 0">📋 Number Records</h1><div class="sub" id="who"></div></div>
-    <button class="dots" id="gear" title="Settings">⚙</button>
+    <div><button class="dots" id="binBtn" title="Recycle bin">🗑<span class="badge" id="binN"></span></button><button class="dots" id="gear" title="Settings">⚙</button></div>
   </div>
 
   <div class="card" style="margin-top:10px">
@@ -74,7 +80,7 @@ hr{border:0;border-top:1px solid var(--bd);margin:12px 0}
       <div style="flex:1"><h2 id="title">Today</h2><div class="sub" id="sub"></div></div>
       <button class="dots" id="menu" title="History">⋮</button>
     </div>
-    <div class="sum"><span>Records: <b id="cnt">0</b></span><span id="moneyBox">Total money: <b id="tot">0</b></span></div>
+    <div class="sum"><div>Records<b id="cnt">0</b></div><div id="moneyBox">Total money<b id="tot">0</b></div></div>
     <ul id="list"></ul>
     <div class="btns">
       <button id="csv" class="gray">⬇ Export CSV</button>
@@ -89,7 +95,11 @@ hr{border:0;border-top:1px solid var(--bd);margin:12px 0}
     <label class="sub" for="uname">Your name (added to every CSV file)</label>
     <input id="uname" type="text" placeholder="Enter your name" autocomplete="name" style="margin:6px 0 12px">
     <hr>
-    <div class="sub" style="margin-bottom:6px">Import invoices (CSV)</div>
+    <div class="sub" style="margin-bottom:6px">Import records from CSV (file exported from this app)</div>
+    <input id="rfile" type="file" accept=".csv,text/csv,text/plain">
+    <div class="sub" id="rstat" style="margin:8px 0"></div>
+    <hr>
+    <div class="sub" style="margin-bottom:6px">Import invoices CSV (money + market names)</div>
     <input id="ifile" type="file" accept=".csv,text/csv,text/plain">
     <div id="imap" style="display:none;margin-top:8px">
       <label class="sub">Invoice number column</label><select id="cInv"></select>
@@ -99,7 +109,24 @@ hr{border:0;border-top:1px solid var(--bd);margin:12px 0}
     </div>
     <div class="sub" id="istat" style="margin:8px 0"></div>
     <button class="gray" id="iclear" style="width:100%;margin-bottom:12px">Clear imported invoices</button>
+    <hr>
+    <button class="gray" id="sbin" style="width:100%;margin-bottom:8px">🗑 Recycle bin</button>
+    <button class="gray" id="sdup" style="width:100%;margin-bottom:8px">Remove duplicate records</button>
+    <button class="danger" id="sdel" style="width:100%;margin-bottom:12px">Delete all records</button>
     <div class="btns"><button class="gray" id="sclose">Close</button><button id="ssave">Save</button></div>
+  </div>
+</div>
+
+<div id="bov" class="ovl">
+  <div class="modal">
+    <h2 style="margin-bottom:4px">🗑 Recycle bin</h2>
+    <div class="sub" id="bstat" style="margin-bottom:8px">Restoring skips numbers that already exist.</div>
+    <ul id="blist"></ul>
+    <div class="btns">
+      <button class="gray" id="bclose">Close</button>
+      <button id="brall">Restore all</button>
+      <button class="danger" id="bempty">Empty</button>
+    </div>
   </div>
 </div>
 
@@ -164,6 +191,43 @@ const timeStr = d => `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSecond
 const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 const todayStr = () => dateStr(new Date());
 
+/* ---------- Recycle bin ---------- */
+const BKEY = 'number_records_bin';
+let bin = [];
+try { bin = JSON.parse(localStorage.getItem(BKEY)) || []; } catch (e) { bin = []; }
+function saveBin() { try { localStorage.setItem(BKEY, JSON.stringify(bin)); } catch (e) {} }
+const recKey = r => key(r.value);
+function toBin(list) {
+  const t = dateStr(new Date()) + ' ' + timeStr(new Date());
+  list.forEach(r => bin.push({ ...r, deletedAt: t }));
+  saveBin();
+}
+function restoreItems(items) {
+  const active = new Set(records.map(recKey)); let ok = 0, dup = 0;
+  items.forEach(b => {
+    const { deletedAt, ...r } = b, k = recKey(r);
+    if (active.has(k)) dup++; else { active.add(k); records.push(r); ok++; }
+  });
+  bin = bin.filter(b => !items.includes(b));   // restored items AND duplicates leave the bin
+  records.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  save(); saveBin(); render(); renderBin();
+  const m = `Restored ${ok}` + (dup ? `, removed ${dup} duplicate${dup > 1 ? 's' : ''}` : '');
+  $('bstat').textContent = m; $('msg').textContent = m;
+}
+function renderBin() {
+  $('binN').textContent = bin.length || '';
+  const ul = $('blist'); ul.innerHTML = '';
+  if (!bin.length) { ul.innerHTML = '<div class="empty">Recycle bin is empty</div>'; return; }
+  [...bin].reverse().forEach(b => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="n"><span class="v"></span><span class="mkt"></span></span><span class="d">deleted<br>${esc(b.deletedAt || '')}</span><button class="rs">↩ Restore</button>`;
+    li.querySelector('.v').textContent = b.value;
+    const mk = nameOf(b); if (mk) li.querySelector('.mkt').textContent = '🏪 ' + mk;
+    li.querySelector('.rs').onclick = () => restoreItems([b]);
+    ul.appendChild(li);
+  });
+}
+
 let sel = [todayStr()];   // dates currently shown (default: today only)
 
 function save() { try { localStorage.setItem(KEY, JSON.stringify(records)); } catch (e) {} }
@@ -191,7 +255,7 @@ function render() {
     const mk = nameOf(r); if (mk) li.querySelector('.mkt').textContent = '🏪 ' + mk;
     const am = amtOf(r); if (am !== '') li.querySelector('.amt').textContent = '💰 ' + fmt(am);
     li.querySelector('.x').onclick = () => {
-      if (confirm('Delete this record?')) { records = records.filter(x => x.id !== r.id); save(); render(); }
+      if (confirm('Move this record to the recycle bin?')) { records = records.filter(x => x.id !== r.id); toBin([r]); save(); render(); renderBin(); }
     };
     ul.appendChild(li);
   });
@@ -204,6 +268,8 @@ function render() {
 function add() {
   const v = $('num').value.trim();
   if (v === '' || isNaN(Number(v))) { $('msg').textContent = 'Please enter a valid number.'; return; }
+  const k = key(v), ex = records.find(r => recKey(r) === k);
+  if (ex) { $('msg').textContent = `⚠ ${v} is already recorded (${ex.date} ${ex.time}). Not added.`; $('num').select(); return; }
   const now = new Date();
   records.push({ id: now.getTime() + Math.random(), value: v, date: dateStr(now), time: timeStr(now) });
   save();
@@ -263,6 +329,53 @@ function setMode(m) {
   renderCal();
 }
 $('menu').onclick = openCal;
+$('binBtn').onclick = $('sbin').onclick = () => { renderBin(); $('bov').classList.add('on'); };
+$('bclose').onclick = () => $('bov').classList.remove('on');
+$('brall').onclick = () => { if (bin.length) restoreItems([...bin]); };
+$('bempty').onclick = () => { if (bin.length && confirm('Permanently delete everything in the recycle bin?')) { bin = []; saveBin(); renderBin(); $('bstat').textContent = 'Recycle bin emptied.'; } };
+$('sdel').onclick = () => {
+  if (!records.length) { $('rstat').textContent = 'No records to delete.'; return; }
+  if (confirm(`Delete all ${records.length} records? They will be moved to the recycle bin.`)) {
+    const n = records.length; toBin(records); records = []; save(); render(); renderBin();
+    $('rstat').textContent = `${n} records moved to the recycle bin.`;
+  }
+};
+$('sdup').onclick = () => {
+  const seen = new Set(), dups = [];
+  records.forEach(r => { const k = recKey(r); if (seen.has(k)) dups.push(r); else seen.add(k); });
+  if (!dups.length) { $('rstat').textContent = 'No duplicates found.'; return; }
+  records = records.filter(r => !dups.includes(r)); toBin(dups); save(); render(); renderBin();
+  $('rstat').textContent = `${dups.length} duplicate${dups.length > 1 ? 's' : ''} moved to the recycle bin (oldest kept).`;
+};
+$('rfile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rows = parseCSV(await f.text()); e.target.value = '';
+  if (!rows.length) { $('rstat').textContent = 'The file is empty.'; return; }
+  const H = rows[0].map(h => h.trim().toLowerCase());
+  const iN = H.indexOf('number'), iD = H.indexOf('date'), iT = H.indexOf('time'), iM = H.indexOf('market'), iA = H.indexOf('amount');
+  if (iN < 0) { $('rstat').textContent = 'No "Number" column found. Use a CSV exported from this app.'; return; }
+  const active = new Set(records.map(recKey)); let ok = 0, dup = 0, bad = 0; const dates = new Set();
+  rows.slice(1).forEach(r => {
+    const v = digits((r[iN] || '').trim());
+    if (v === '' || isNaN(Number(v))) { bad++; return; }
+    const k = key(v);
+    if (active.has(k)) { dup++; return; }
+    active.add(k);
+    const now = new Date();
+    const d = iD >= 0 && /^\d{4}-\d{2}-\d{2}$/.test((r[iD] || '').trim()) ? r[iD].trim() : dateStr(now);
+    const t = iT >= 0 && /^\d{2}:\d{2}:\d{2}$/.test((r[iT] || '').trim()) ? r[iT].trim() : timeStr(now);
+    records.push({ id: now.getTime() + Math.random(), value: v, date: d, time: t });
+    dates.add(d); ok++;
+    if (iA >= 0 && !has(k)) { const a = toNum(r[iA] || ''); if (a !== null && (r[iA] || '').trim() !== '') inv[k] = a; }
+    if (iM >= 0 && !invName[k] && (r[iM] || '').trim()) invName[k] = r[iM].trim();
+  });
+  records.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  save();
+  try { localStorage.setItem(IKEY, JSON.stringify(inv)); localStorage.setItem(NMKEY, JSON.stringify(invName)); } catch (e) {}
+  if (ok) sel = [...dates].sort();
+  istat(); render();
+  $('rstat').textContent = `Imported ${ok} record${ok === 1 ? '' : 's'}` + (dup ? `, skipped ${dup} duplicate${dup > 1 ? 's' : ''}` : '') + (bad ? `, ${bad} invalid row${bad > 1 ? 's' : ''} ignored` : '') + '.';
+};
 $('mRange').onclick = () => setMode('range');
 $('mMulti').onclick = () => setMode('multi');
 $('prev').onclick = () => { cm--; if (cm < 0) { cm = 11; cy--; } renderCal(); };
@@ -327,6 +440,7 @@ $('iclear').onclick = () => {
   if (confirm('Remove all imported invoices?')) { inv = {}; invName = {}; try { localStorage.removeItem(IKEY); localStorage.removeItem(NMKEY); } catch (e) {} istat(); render(); }
 };
 istat();
+renderBin();
 const csvCell = s => /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 
 function buildCsv() {
