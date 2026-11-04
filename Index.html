@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Number Records</title>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--tx:#1b2430;--mut:#6b7788;--pri:#2563eb;--wa:#25d366;--bd:#e2e7ee;--del:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#10151c;--card:#1a212b;--tx:#e8edf3;--mut:#93a0b2;--bd:#2a3340}}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,Arial,sans-serif;background:var(--bg);color:var(--tx);padding:12px}
+.wrap{max-width:560px;margin:auto}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+h1{font-size:20px;margin:4px 0 12px}
+h2{font-size:16px;margin:0}
+.row{display:flex;gap:8px}
+input,select{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:12px;width:100%}
+button{font:inherit;border:0;border-radius:10px;padding:12px 16px;color:#fff;background:var(--pri);font-weight:600;cursor:pointer}
+button.wa{background:var(--pri);color:#fff}
+button.gray{background:var(--mut)}
+button.dots{background:none;color:var(--tx);font-size:24px;line-height:1;padding:4px 10px}
+.btns{display:flex;gap:8px;margin-top:10px}
+.btns button{flex:1}
+.sub{color:var(--mut);font-size:13px;margin-top:2px}
+.sum{display:flex;justify-content:space-between;align-items:flex-end;color:var(--mut);font-size:14px;margin:12px 0}
+.sum b{display:block;color:var(--tx);font-size:26px;line-height:1.15}
+#moneyBox{text-align:right}
+#moneyBox b{font-size:36px;color:#16a34a}
+button.danger{background:var(--del)}
+button.rs{padding:8px 10px;font-size:13px}
+.badge{font-size:11px;background:var(--del);color:#fff;border-radius:9px;padding:1px 6px;margin-left:2px;vertical-align:top}
+.badge:empty{display:none}
+.chips{display:flex;gap:6px;margin:0 0 10px;flex-wrap:wrap}
+.chips button{flex:1;padding:8px 6px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);font-size:14px;white-space:nowrap}
+.chips button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.page{position:fixed;inset:0;background:var(--bg);overflow:auto;display:none;z-index:8;padding:12px}
+.page.on{display:block}
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px}
+.kl{color:var(--mut);font-size:12px}.kv{font-size:24px;font-weight:700;margin-top:2px;word-break:break-word}.ks{color:var(--mut);font-size:12px;margin-top:2px}
+.bars{display:flex;gap:3px;overflow-x:auto;padding:8px 0 4px}
+.bcol{flex:1 0 14px;min-width:14px;display:flex;flex-direction:column;align-items:center;cursor:pointer}
+.bw{height:130px;width:100%;display:flex;align-items:flex-end}
+.bar{width:100%;border-radius:4px 4px 0 0;min-height:2px}
+.bv{font-size:10px;height:14px;color:var(--mut);white-space:nowrap}
+.bl{font-size:10px;height:14px;color:var(--mut);margin-top:2px}
+.tip{color:var(--mut);font-size:12px;min-height:16px;margin-top:4px}
+.hrow{margin:10px 0}.hl{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbw{display:flex;align-items:center;gap:8px;margin-top:3px}
+.hb{flex:1;background:var(--bg);border-radius:6px;height:12px}.hb i{display:block;height:100%;border-radius:6px}
+.hv{font-size:12px;min-width:56px;text-align:right}
+.seg2{display:flex;gap:4px}.seg2 button{padding:5px 10px;font-size:12px;background:var(--bg);color:var(--tx);border:1px solid var(--bd)}.seg2 button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+textarea{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;width:100%;min-height:110px;resize:vertical}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--bd)}
+li .n{font-size:18px;font-weight:700;flex:1}
+li .d{color:var(--mut);font-size:12px;text-align:right}
+li .x{background:none;color:var(--del);padding:4px 8px;font-size:18px}
+.idx{color:var(--mut);width:28px;font-size:13px}
+.empty{color:var(--mut);text-align:center;padding:18px 0}
+.mkt{display:block;font-size:13px;color:var(--mut);font-weight:500}
+.amt{display:block;font-size:13px;color:#16a34a;font-weight:600}
+hr{border:0;border-top:1px solid var(--bd);margin:12px 0}
+#msg{color:var(--mut);font-size:13px;min-height:18px;margin-top:8px}
+/* calendar modal */
+.ovl{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:14px;z-index:9}
+.ovl.on{display:flex}
+.modal{background:var(--card);border-radius:16px;padding:14px;width:100%;max-width:380px;max-height:95vh;overflow:auto}
+.seg{display:flex;gap:6px;margin-bottom:10px}
+.seg button{flex:1;background:var(--bg);color:var(--tx);border:1px solid var(--bd);padding:9px}
+.seg button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.nav button{background:var(--bg);color:var(--tx);padding:6px 14px;font-size:18px}
+.nav b{font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.grid .wd{font-size:11px;color:var(--mut);padding:4px 0}
+.grid button{background:none;color:var(--tx);padding:9px 0;font-weight:500;position:relative}
+.grid button.sel{background:var(--pri);color:#fff}
+.grid button.dot::after{content:"";position:absolute;bottom:3px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--wa)}
+.grid button.today{outline:1px solid var(--pri)}
+.hint{color:var(--mut);font-size:12px;margin:8px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="row" style="align-items:center;justify-content:space-between">
+    <div><h1 style="margin:4px 0 0">📋 Number Records</h1><div class="sub" id="who"></div></div>
+    <div style="display:flex"><button class="dots" id="statBtn" title="Statistics">📊</button><button class="dots" id="binBtn" title="Recycle bin">🗑<span class="badge" id="binN"></span></button><button class="dots" id="gear" title="Settings">⚙</button></div>
+  </div>
+
+  <div class="card" style="margin-top:10px">
+    <div class="row">
+      <input id="num" type="number" inputmode="decimal" step="any" placeholder="Enter a number" autofocus>
+      <button id="add">Add</button>
+    </div>
+    <div class="row" style="margin-top:8px;align-items:center">
+      <span class="sub" style="white-space:nowrap;margin:0">📅 Date</span>
+      <input type="date" id="addDate">
+      <button id="batchBtn" class="gray" style="white-space:nowrap">📥 Batch</button>
+    </div>
+    <div id="msg"></div>
+  </div>
+
+  <div class="card">
+    <div class="chips" data-chips></div>
+    <div class="row" style="align-items:center">
+      <div style="flex:1"><h2 id="title">Today</h2><div class="sub" id="sub"></div></div>
+      <button class="dots" id="menu" title="History">⋮</button>
+    </div>
+    <div class="sum"><div>Records<b id="cnt">0</b></div><div id="moneyBox">Total money<b id="tot">0</b></div></div>
+    <ul id="list"></ul>
+    <div class="btns">
+      <button id="csv" class="gray">⬇ Export CSV</button>
+      <button id="wa" class="wa">📤 Share</button>
+    </div>
+  </div>
+</div>
+
+<div id="sov" class="ovl">
+  <div class="modal">
+    <h2 style="margin-bottom:10px">⚙ Settings</h2>
+    <label class="sub" for="uname">Your name (added to every CSV file)</label>
+    <input id="uname" type="text" placeholder="Enter your name" autocomplete="name" style="margin:6px 0 12px">
+    <label class="sub" for="wstart">Week starts on</label>
+    <select id="wstart" style="margin:6px 0 12px"><option value="6">Saturday</option><option value="0">Sunday</option><option value="1">Monday</option></select>
+    <hr>
+    <div class="sub" style="margin-bottom:6px">Import records from CSV (file exported from this app)</div>
+    <input id="rfile" type="file" accept=".csv,text/csv,text/plain">
+    <div class="sub" id="rstat" style="margin:8px 0"></div>
+    <hr>
+    <div class="sub" style="margin-bottom:6px">Import invoices CSV (money + market names)</div>
+    <input id="ifile" type="file" accept=".csv,text/csv,text/plain">
+    <div id="imap" style="display:none;margin-top:8px">
+      <label class="sub">Invoice number column</label><select id="cInv"></select>
+      <label class="sub" style="display:block;margin-top:6px">Total money column</label><select id="cAmt"></select>
+      <label class="sub" style="display:block;margin-top:6px">Market name column</label><select id="cName"></select>
+      <button id="idoit" style="width:100%;margin-top:8px">Import</button>
+    </div>
+    <div class="sub" id="istat" style="margin:8px 0"></div>
+    <button class="gray" id="iclear" style="width:100%;margin-bottom:12px">Clear imported invoices</button>
+    <hr>
+    <button class="gray" id="sbin" style="width:100%;margin-bottom:8px">🗑 Recycle bin</button>
+    <button class="gray" id="sdup" style="width:100%;margin-bottom:8px">Remove duplicate records</button>
+    <button class="danger" id="sdel" style="width:100%;margin-bottom:12px">Delete all records</button>
+    <div class="btns"><button class="gray" id="sclose">Close</button><button id="ssave">Save</button></div>
+  </div>
+</div>
+
+<div id="bov" class="ovl">
+  <div class="modal">
+    <h2 style="margin-bottom:4px">🗑 Recycle bin</h2>
+    <div class="sub" id="bstat" style="margin-bottom:8px">Restoring skips numbers that already exist.</div>
+    <ul id="blist"></ul>
+    <div class="btns">
+      <button class="gray" id="bclose">Close</button>
+      <button id="brall">Restore all</button>
+      <button class="danger" id="bempty">Empty</button>
+    </div>
+  </div>
+</div>
+
+<div id="cov" class="ovl">
+  <div class="modal">
+    <h2 style="margin-bottom:8px">📥 Add codes (batch or single)</h2>
+    <div class="sub" style="margin-bottom:6px">Load a file (one code per line) or paste codes below</div>
+    <input id="cfile" type="file" accept=".csv,.txt,text/csv,text/plain">
+    <textarea id="ctxt" placeholder="173029&#10;172782&#10;..." style="margin-top:8px"></textarea>
+    <label class="sub" style="display:block;margin-top:8px">📅 Add all these codes to date</label>
+    <input type="date" id="cdate" style="margin-top:4px">
+    <div class="sub" id="cprev" style="margin:8px 0">0 new · 0 duplicate · 0 invalid</div>
+    <div class="sub" id="cres" style="margin-bottom:8px;color:var(--tx)"></div>
+    <div class="btns"><button class="gray" id="cclose">Close</button><button id="cadd">Add codes</button></div>
+  </div>
+</div>
+
+<div id="stats" class="page">
+  <div class="wrap">
+    <div class="row" style="align-items:center;gap:6px">
+      <button class="dots" id="stBack" title="Back">←</button>
+      <div><h1 style="margin:0;font-size:20px">📊 Statistics</h1><div class="sub" id="stTitle"></div></div>
+    </div>
+    <div class="chips" data-chips style="margin-top:10px"></div>
+    <div id="stBody"></div>
+  </div>
+</div>
+
+<div id="ov" class="ovl">
+  <div class="modal">
+    <div class="seg"><button id="mRange" class="on">Range</button><button id="mMulti">Multiple dates</button></div>
+    <div class="nav"><button id="prev">‹</button><b id="mon"></b><button id="next">›</button></div>
+    <div class="grid" id="cal"></div>
+    <div class="hint" id="hint"></div>
+    <div class="btns" style="margin-top:6px">
+      <button class="gray" id="qToday">Today</button>
+      <button class="gray" id="q7">Last 7 days</button>
+    </div>
+    <div class="btns">
+      <button class="gray" id="cancel">Cancel</button>
+      <button id="apply">Apply</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY = 'number_records_v1';
+let records = [];
+try { records = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { records = []; }
+
+/* ---------- Invoices (imported CSV): invoice number -> total money ---------- */
+const IKEY = 'number_records_invoices';
+let inv = {};
+try { inv = JSON.parse(localStorage.getItem(IKEY)) || {}; } catch (e) { inv = {}; }
+const NMKEY = 'number_records_invnames';
+let invName = {};
+try { invName = JSON.parse(localStorage.getItem(NMKEY)) || {}; } catch (e) { invName = {}; }
+const nameOf = r => invName[key(r.value)] || '';
+const has = k => Object.prototype.hasOwnProperty.call(inv, k);
+const digits = s => String(s).replace(/[٠-٩]/g, d => d.charCodeAt(0) - 1632).replace(/[۰-۹]/g, d => d.charCodeAt(0) - 1776);
+const key = v => { const s = digits(v).trim(); return /^\d+$/.test(s) ? s.replace(/^0+(?=\d)/, '') : s.toLowerCase(); };
+const toNum = v => { const n = parseFloat(digits(v).replace(/٫/g, '.').replace(/[٬,\s]/g, '').replace(/[^\d.\-]/g, '')); return isNaN(n) ? null : n; };
+const fmt = n => Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+const amtOf = r => { const k = key(r.value); return has(k) ? inv[k] : ''; };
+const esc = t => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function parseCSV(text) {
+  text = text.replace(/^\uFEFF/, '');
+  const first = text.split(/\r?\n/, 1)[0];
+  const delim = [',', ';', '\t'].sort((a, b) => first.split(b).length - first.split(a).length)[0];
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i+1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === delim) { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i+1] === '\n') i++; row.push(cell); cell = ''; rows.push(row); row = []; }
+    else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim() !== ''));
+}
+
+const $ = id => document.getElementById(id);
+const p2 = n => String(n).padStart(2, '0');
+const dateStr = d => `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+const timeStr = d => `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const todayStr = () => dateStr(new Date());
+
+/* ---------- Recycle bin ---------- */
+const BKEY = 'number_records_bin';
+let bin = [];
+try { bin = JSON.parse(localStorage.getItem(BKEY)) || []; } catch (e) { bin = []; }
+function saveBin() { try { localStorage.setItem(BKEY, JSON.stringify(bin)); } catch (e) {} }
+const recKey = r => key(r.value);
+function toBin(list) {
+  const t = dateStr(new Date()) + ' ' + timeStr(new Date());
+  list.forEach(r => bin.push({ ...r, deletedAt: t }));
+  saveBin();
+}
+function restoreItems(items) {
+  const active = new Set(records.map(recKey)); let ok = 0, dup = 0;
+  items.forEach(b => {
+    const { deletedAt, ...r } = b, k = recKey(r);
+    if (active.has(k)) dup++; else { active.add(k); records.push(r); ok++; }
+  });
+  bin = bin.filter(b => !items.includes(b));   // restored items AND duplicates leave the bin
+  records.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  save(); saveBin(); render(); renderBin();
+  const m = `Restored ${ok}` + (dup ? `, removed ${dup} duplicate${dup > 1 ? 's' : ''}` : '');
+  $('bstat').textContent = m; $('msg').textContent = m;
+}
+function renderBin() {
+  $('binN').textContent = bin.length || '';
+  const ul = $('blist'); ul.innerHTML = '';
+  if (!bin.length) { ul.innerHTML = '<div class="empty">Recycle bin is empty</div>'; return; }
+  [...bin].reverse().forEach(b => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="n"><span class="v"></span><span class="mkt"></span></span><span class="d">deleted<br>${esc(b.deletedAt || '')}</span><button class="rs">↩ Restore</button>`;
+    li.querySelector('.v').textContent = b.value;
+    const mk = nameOf(b); if (mk) li.querySelector('.mkt').textContent = '🏪 ' + mk;
+    li.querySelector('.rs').onclick = () => restoreItems([b]);
+    ul.appendChild(li);
+  });
+}
+
+/* ---------- View (remembered between launches) ---------- */
+const VKEY = 'number_records_view', WKEY = 'number_records_ws';
+let view = { t: 'today' }, weekStart = 6, statsOpen = false, mktMetric = 'cnt';
+try { const v = JSON.parse(localStorage.getItem(VKEY)); if (v && v.t) view = v; } catch (e) {}
+if ((view.t === 'range' && !(view.from && view.to)) || (view.t === 'multi' && !(view.dates && view.dates.length)) || !['today','week','month','all','range','multi'].includes(view.t)) view = { t: 'today' };
+try { const w = localStorage.getItem(WKEY); if (w !== null) weekStart = +w; } catch (e) {}
+function setView(v) { view = v; try { localStorage.setItem(VKEY, JSON.stringify(v)); } catch (e) {} render(); }
+const addDays = (ds, n) => { const d = parse(ds); d.setDate(d.getDate() + n); return dateStr(d); };
+function spec() {
+  const td = todayStr();
+  switch (view.t) {
+    case 'week': { const diff = (parse(td).getDay() - weekStart + 7) % 7, f = addDays(td, -diff); return { from: f, to: addDays(f, 6) }; }
+    case 'month': { const d = parse(td); return { from: dateStr(new Date(d.getFullYear(), d.getMonth(), 1)), to: dateStr(new Date(d.getFullYear(), d.getMonth() + 1, 0)) }; }
+    case 'all': { if (!records.length) return { from: td, to: td }; let mn = records[0].date, mx = mn; records.forEach(r => { if (r.date < mn) mn = r.date; if (r.date > mx) mx = r.date; }); return { from: mn, to: mx }; }
+    case 'range': return { from: view.from, to: view.to };
+    case 'multi': { const s = [...view.dates].sort(); return { from: s[0], to: s[s.length - 1], set: new Set(s) }; }
+    default: return { from: td, to: td };
+  }
+}
+const inView = (d, sp) => sp.set ? sp.set.has(d) : (d >= sp.from && d <= sp.to);
+const sortRecords = () => records.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+function save() { try { localStorage.setItem(KEY, JSON.stringify(records)); } catch (e) {} }
+function shown() { const sp = spec(); return records.filter(r => inView(r.date, sp)); }
+
+function label() {
+  const sp = spec(), days = Math.round((parse(sp.to) - parse(sp.from)) / 864e5) + 1;
+  switch (view.t) {
+    case 'week': return ['This week', `${sp.from} → ${sp.to}`];
+    case 'month': return ['This month', parse(sp.from).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })];
+    case 'all': return ['All records', records.length ? `${sp.from} → ${sp.to}` : ''];
+    case 'range': return sp.from === sp.to ? [sp.from === todayStr() ? 'Today' : sp.from, sp.from === todayStr() ? sp.from : ''] : [`${sp.from} → ${sp.to}`, `${days} days`];
+    case 'multi': return [`${sp.set.size} selected days`, `${sp.from} → ${sp.to}`];
+    default: return ['Today', sp.from];
+  }
+}
+const CHIPS = [['today', 'Today'], ['week', 'Week'], ['month', 'Month'], ['all', 'All'], ['cal', '📅 Pick']];
+function renderChips() {
+  document.querySelectorAll('[data-chips]').forEach(box => {
+    box.innerHTML = '';
+    CHIPS.forEach(([k, l]) => {
+      const b = document.createElement('button'); b.textContent = l;
+      if (k === 'cal' ? (view.t === 'range' || view.t === 'multi') : view.t === k) b.className = 'on';
+      b.onclick = () => k === 'cal' ? openCal() : setView({ t: k });
+      box.appendChild(b);
+    });
+  });
+}
+
+function render() {
+  const rows = shown();
+  const [t, st] = label();
+  $('title').textContent = t; $('sub').textContent = st;
+  const ul = $('list');
+  ul.innerHTML = '';
+  if (!rows.length) ul.innerHTML = '<div class="empty">No records</div>';
+  [...rows].reverse().forEach((r, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="idx">${rows.length - i}</span><span class="n"><span class="v"></span><span class="mkt"></span><span class="amt"></span></span>
+      <span class="d">${r.date}<br>${r.time}</span><button class="x" title="Delete">✕</button>`;
+    li.querySelector('.v').textContent = r.value;
+    const mk = nameOf(r); if (mk) li.querySelector('.mkt').textContent = '🏪 ' + mk;
+    const am = amtOf(r); if (am !== '') li.querySelector('.amt').textContent = '💰 ' + fmt(am);
+    li.querySelector('.x').onclick = () => {
+      if (confirm('Move this record to the recycle bin?')) { records = records.filter(x => x.id !== r.id); toBin([r]); save(); render(); renderBin(); }
+    };
+    ul.appendChild(li);
+  });
+  $('cnt').textContent = rows.length;
+  const seen = new Set(); let money = 0;
+  rows.forEach(r => { const k = key(r.value); if (has(k) && !seen.has(k)) { seen.add(k); money += inv[k]; } });
+  $('tot').textContent = fmt(money);
+  renderChips();
+  if (statsOpen) renderStats();
+}
+
+function add() {
+  const v = $('num').value.trim();
+  if (v === '' || isNaN(Number(v))) { $('msg').textContent = 'Please enter a valid number.'; return; }
+  const k = key(v), ex = records.find(r => recKey(r) === k);
+  if (ex) { $('msg').textContent = `⚠ ${v} is already recorded (${ex.date} ${ex.time}). Not added.`; $('num').select(); return; }
+  const now = new Date(), dt = $('addDate').value || todayStr();
+  records.push({ id: now.getTime() + Math.random(), value: v, date: dt, time: timeStr(now) });
+  sortRecords(); save();
+  $('num').value = '';
+  $('msg').textContent = `Added ✓ (${dt})` + (inView(dt, spec()) ? '' : ' - not in the current view');
+  render();
+  $('num').focus();
+}
+
+/* ---------- Calendar picker ---------- */
+let tmp = new Set(), mode = 'range', rStart = null, cy, cm;
+
+function openCal() {
+  rStart = null;
+  const sp = spec();
+  if (view.t === 'multi') { tmp = new Set(view.dates); mode = 'multi'; }
+  else if (view.t === 'range') { tmp = fill(view.from, view.to); mode = 'range'; }
+  else { tmp = new Set([todayStr()]); mode = 'range'; }
+  const f = parse(view.t === 'range' || view.t === 'multi' ? sp.from : todayStr()); cy = f.getFullYear(); cm = f.getMonth();
+  $('mRange').classList.toggle('on', mode === 'range'); $('mMulti').classList.toggle('on', mode === 'multi');
+  $('ov').classList.add('on'); renderCal();
+}
+function renderCal() {
+  const has = new Set(records.map(r => r.date));
+  $('mon').textContent = new Date(cy, cm, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const g = $('cal'); g.innerHTML = '';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(w => g.insertAdjacentHTML('beforeend', `<div class="wd">${w}</div>`));
+  const first = new Date(cy, cm, 1).getDay(), n = new Date(cy, cm + 1, 0).getDate();
+  for (let i = 0; i < first; i++) g.appendChild(document.createElement('span'));
+  for (let d = 1; d <= n; d++) {
+    const ds = `${cy}-${p2(cm+1)}-${p2(d)}`;
+    const b = document.createElement('button');
+    b.textContent = d;
+    if (tmp.has(ds)) b.classList.add('sel');
+    if (has.has(ds)) b.classList.add('dot');
+    if (ds === todayStr()) b.classList.add('today');
+    b.onclick = () => pick(ds);
+    g.appendChild(b);
+  }
+  $('hint').textContent = (mode === 'range'
+    ? (rStart ? 'Now tap the end date.' : 'Tap a start date, then an end date.')
+    : 'Tap dates to select or unselect them.') + ' Green dot = has records.';
+}
+function fill(a, b) {
+  let s = parse(a), e = parse(b);
+  if (s > e) [s, e] = [e, s];
+  const out = new Set();
+  for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) out.add(dateStr(d));
+  return out;
+}
+function pick(ds) {
+  if (mode === 'multi') { tmp.has(ds) ? tmp.delete(ds) : tmp.add(ds); }
+  else if (!rStart) { tmp = new Set([ds]); rStart = ds; }
+  else { tmp = fill(rStart, ds); rStart = null; }
+  renderCal();
+}
+function setMode(m) {
+  mode = m; rStart = null;
+  $('mRange').classList.toggle('on', m === 'range');
+  $('mMulti').classList.toggle('on', m === 'multi');
+  renderCal();
+}
+$('menu').onclick = openCal;
+$('binBtn').onclick = $('sbin').onclick = () => { renderBin(); $('bov').classList.add('on'); };
+$('bclose').onclick = () => $('bov').classList.remove('on');
+$('brall').onclick = () => { if (bin.length) restoreItems([...bin]); };
+$('bempty').onclick = () => { if (bin.length && confirm('Permanently delete everything in the recycle bin?')) { bin = []; saveBin(); renderBin(); $('bstat').textContent = 'Recycle bin emptied.'; } };
+$('sdel').onclick = () => {
+  if (!records.length) { $('rstat').textContent = 'No records to delete.'; return; }
+  if (confirm(`Delete all ${records.length} records? They will be moved to the recycle bin.`)) {
+    const n = records.length; toBin(records); records = []; save(); render(); renderBin();
+    $('rstat').textContent = `${n} records moved to the recycle bin.`;
+  }
+};
+$('sdup').onclick = () => {
+  const seen = new Set(), dups = [];
+  records.forEach(r => { const k = recKey(r); if (seen.has(k)) dups.push(r); else seen.add(k); });
+  if (!dups.length) { $('rstat').textContent = 'No duplicates found.'; return; }
+  records = records.filter(r => !dups.includes(r)); toBin(dups); save(); render(); renderBin();
+  $('rstat').textContent = `${dups.length} duplicate${dups.length > 1 ? 's' : ''} moved to the recycle bin (oldest kept).`;
+};
+$('rfile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rows = parseCSV(await f.text()); e.target.value = '';
+  if (!rows.length) { $('rstat').textContent = 'The file is empty.'; return; }
+  const H = rows[0].map(h => h.trim().toLowerCase());
+  const iN = H.indexOf('number'), iD = H.indexOf('date'), iT = H.indexOf('time'), iM = H.indexOf('market'), iA = H.indexOf('amount');
+  if (iN < 0) { $('rstat').textContent = 'No "Number" column found. For a plain list of codes use 📥 Batch on the main screen.'; return; }
+  const active = new Set(records.map(recKey)); let ok = 0, dup = 0, bad = 0; const dates = new Set();
+  rows.slice(1).forEach(r => {
+    const v = digits((r[iN] || '').trim());
+    if (v === '' || isNaN(Number(v))) { bad++; return; }
+    const k = key(v);
+    if (active.has(k)) { dup++; return; }
+    active.add(k);
+    const now = new Date();
+    const d = iD >= 0 && /^\d{4}-\d{2}-\d{2}$/.test((r[iD] || '').trim()) ? r[iD].trim() : dateStr(now);
+    const t = iT >= 0 && /^\d{2}:\d{2}:\d{2}$/.test((r[iT] || '').trim()) ? r[iT].trim() : timeStr(now);
+    records.push({ id: now.getTime() + Math.random(), value: v, date: d, time: t });
+    dates.add(d); ok++;
+    if (iA >= 0 && !has(k)) { const a = toNum(r[iA] || ''); if (a !== null && (r[iA] || '').trim() !== '') inv[k] = a; }
+    if (iM >= 0 && !invName[k] && (r[iM] || '').trim()) invName[k] = r[iM].trim();
+  });
+  records.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  save();
+  try { localStorage.setItem(IKEY, JSON.stringify(inv)); localStorage.setItem(NMKEY, JSON.stringify(invName)); } catch (e) {}
+  istat();
+  if (ok) { const d = [...dates].sort(); setView(d.length === 1 ? { t: 'range', from: d[0], to: d[0] } : { t: 'multi', dates: d }); } else render();
+  $('rstat').textContent = `Imported ${ok} record${ok === 1 ? '' : 's'}` + (dup ? `, skipped ${dup} duplicate${dup > 1 ? 's' : ''}` : '') + (bad ? `, ${bad} invalid row${bad > 1 ? 's' : ''} ignored` : '') + '.';
+};
+$('mRange').onclick = () => setMode('range');
+$('mMulti').onclick = () => setMode('multi');
+$('prev').onclick = () => { cm--; if (cm < 0) { cm = 11; cy--; } renderCal(); };
+$('next').onclick = () => { cm++; if (cm > 11) { cm = 0; cy++; } renderCal(); };
+$('qToday').onclick = () => { tmp = new Set([todayStr()]); rStart = null; renderCal(); };
+$('q7').onclick = () => { const e = new Date(), s = new Date(); s.setDate(s.getDate() - 6); tmp = fill(dateStr(s), dateStr(e)); rStart = null; renderCal(); };
+$('cancel').onclick = () => $('ov').classList.remove('on');
+$('apply').onclick = () => {
+  $('ov').classList.remove('on');
+  if (!tmp.size) return setView({ t: 'today' });
+  const d = [...tmp].sort();
+  setView(mode === 'multi' ? { t: 'multi', dates: d } : { t: 'range', from: d[0], to: d[d.length - 1] });
+};
+
+/* ---------- Export / share ---------- */
+const NKEY = 'number_records_name';
+try { $('uname').value = localStorage.getItem(NKEY) || ''; } catch (e) {}
+function showWho() { const n = $('uname').value.trim(); $('who').textContent = n ? '👤 ' + n : 'Set your name in ⚙ Settings'; }
+function saveName() { try { localStorage.setItem(NKEY, $('uname').value.trim()); } catch (e) {} showWho(); }
+$('uname').addEventListener('input', saveName);
+$('uname').addEventListener('keydown', e => { if (e.key === 'Enter') { saveName(); $('sov').classList.remove('on'); } });
+$('gear').onclick = () => { $('sov').classList.add('on'); $('uname').focus(); };
+$('ssave').onclick = $('sclose').onclick = () => { saveName(); $('sov').classList.remove('on'); };
+showWho();
+
+let pending = null, pendAlias = -1;
+function istat() {
+  const n = Object.keys(inv).length;
+  $('istat').textContent = n ? `${n} codes loaded` : 'No invoices imported yet';
+  $('moneyBox').style.display = n ? '' : 'none';
+}
+$('ifile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rows = parseCSV(await f.text()), data = rows.slice(1);
+  if (!data.length) { $('imap').style.display = 'none'; $('istat').textContent = 'This file has headers only - no invoice rows found.'; return; }
+  pending = data;
+  const H = rows[0].map(h => h.trim());
+  pendAlias = H.indexOf('invoiceNumberData');   // the 6-digit code is accepted too
+  const opts = H.map((h, i) => `<option value="${i}">${i + 1}. ${esc(h)}  (${esc((data[0][i] || '').trim().slice(0, 20))})</option>`).join('');
+  $('cInv').innerHTML = opts; $('cAmt').innerHTML = opts; $('cName').innerHTML = '<option value="-1">(none)</option>' + opts;
+  // Invoice number = 'پسووڵە' (the number you type), money = 'گشتی د_ع' (IQD total)
+  let a = H.indexOf('پسووڵە');
+  let b = H.indexOf('گشتی د_ع'); if (b < 0) b = H.findIndex(h => h.replace(/\s+/g, '') === 'گشتید_ع');
+  const auto = a >= 0 && b >= 0;
+  if (a < 0) a = H.indexOf('invoiceNumberData'); if (a < 0) a = 0;
+  if (b < 0) b = H.indexOf('گشتی'); if (b < 0) b = Math.max(0, H.length - 1);
+  // Market name = the LAST 'بازرگان' column (the first one is just an ID)
+  const c = H.lastIndexOf('بازرگان');
+  $('cInv').value = a; $('cAmt').value = b; $('cName').value = c;
+  if (auto) { doImport(); return; }   // known file layout: import straight away
+  $('imap').style.display = '';
+  $('istat').textContent = `${data.length} rows found. Check the two columns, then tap Import.`;
+};
+$('idoit').onclick = doImport;
+function doImport() {
+  const ci = +$('cInv').value, ca = +$('cAmt').value, cn = +$('cName').value; let n = 0;
+  pending.forEach(r => {
+    const k = key(r[ci] || ''), a = toNum(r[ca] || '');
+    if (!(k && a !== null)) return;
+    const nm = cn >= 0 ? (r[cn] || '').trim() : '';
+    const ks = [k];
+    if (pendAlias >= 0) { const k2 = key(r[pendAlias] || ''); if (k2 && k2 !== k) ks.push(k2); }
+    ks.forEach(x => { inv[x] = a; if (nm) invName[x] = nm; });
+    n++;
+  });
+  let saved = true;
+  try { localStorage.setItem(IKEY, JSON.stringify(inv)); localStorage.setItem(NMKEY, JSON.stringify(invName)); } catch (e) { saved = false; }
+  $('imap').style.display = 'none'; $('ifile').value = ''; pending = null;
+  istat(); $('istat').textContent += ` (${n} read from file)` + (saved ? '' : ' - too large to save on this device');
+  render();
+}
+$('iclear').onclick = () => {
+  if (confirm('Remove all imported invoices?')) { inv = {}; invName = {}; try { localStorage.removeItem(IKEY); localStorage.removeItem(NMKEY); } catch (e) {} istat(); render(); }
+};
+istat();
+renderBin();
+const csvCell = s => /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+
+function buildCsv() {
+  const rows = shown();
+  const person = $('uname').value.trim();
+  const lines = ['Name,No,Number,Market,Amount,Date,Time'];
+  rows.forEach((r, i) => lines.push(`${csvCell(person)},${i+1},${r.value},${csvCell(nameOf(r))},${amtOf(r)},${r.date},${r.time}`));
+  const now = new Date();
+  const safe = person.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_');
+  const name = `${safe ? safe + '_' : ''}numbers_${dateStr(now)}_${p2(now.getHours())}-${p2(now.getMinutes())}-${p2(now.getSeconds())}.csv`;
+  const text = '\uFEFF' + lines.join('\r\n');
+  return { rows, name, text, blob: new Blob([text], { type: 'text/csv' }) };
+}
+function download(c) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(c.blob);
+  a.download = c.name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+$('csv').onclick = () => {
+  const c = buildCsv();
+  if (!c.rows.length) { $('msg').textContent = 'Nothing to export.'; return; }
+  download(c);
+  $('msg').textContent = 'Saved: ' + c.name;
+};
+$('wa').onclick = async () => {
+  const c = buildCsv();
+  if (!c.rows.length) { $('msg').textContent = 'Nothing to share.'; return; }
+  const file = new File([c.blob], c.name, { type: 'text/csv' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: c.name });   // opens the phone's share sheet (WhatsApp, Telegram, Email, ...)
+      return;
+    }
+  } catch (e) { if (e.name === 'AbortError') return; }
+  download(c);
+  $('msg').textContent = 'Sharing files is not supported here. CSV saved: ' + c.name;
+};
+
+/* ---------- date for new records, week start ---------- */
+$('addDate').value = todayStr();
+$('addDate').addEventListener('input', () => { $('addDate').style.borderColor = ($('addDate').value && $('addDate').value !== todayStr()) ? '#f59e0b' : ''; });
+$('wstart').value = String(weekStart);
+$('wstart').onchange = () => { weekStart = +$('wstart').value; try { localStorage.setItem(WKEY, String(weekStart)); } catch (e) {} render(); };
+
+/* ---------- Batch codes ---------- */
+function parseCodes(text) {
+  const parts = text.split(/[\s,;،]+/).filter(Boolean).map(digits);
+  const active = new Set(records.map(recKey)), seen = new Set(), valid = []; let dup = 0, bad = 0;
+  parts.forEach(c => {
+    if (!/^\d+(\.\d+)?$/.test(c)) { bad++; return; }
+    const k = key(c);
+    if (active.has(k) || seen.has(k)) { dup++; return; }
+    seen.add(k); valid.push(c);
+  });
+  return { valid, dup, bad };
+}
+function updatePrev() { const r = parseCodes($('ctxt').value); $('cprev').textContent = `${r.valid.length} new · ${r.dup} duplicate (will be skipped) · ${r.bad} invalid`; }
+const timeAt = i => { const n = new Date(); const t = Math.min(n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds() + i, 86399); return `${p2(Math.floor(t / 3600))}:${p2(Math.floor(t % 3600 / 60))}:${p2(t % 60)}`; };
+$('batchBtn').onclick = () => { $('cdate').value = $('addDate').value || todayStr(); $('cres').textContent = ''; updatePrev(); $('cov').classList.add('on'); };
+$('cclose').onclick = () => $('cov').classList.remove('on');
+$('ctxt').addEventListener('input', updatePrev);
+$('cfile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rows = parseCSV(await f.text()); e.target.value = '';
+  let col = 0, start = 0;
+  if (rows.length) {
+    const H = rows[0].map(h => h.trim().toLowerCase());
+    const ix = ['number', 'code', 'پسووڵە', 'invoicenumberdata'].map(n => H.indexOf(n)).find(i => i >= 0);
+    if (ix !== undefined) { col = ix; start = 1; }
+    else if (!/^[\d٠-٩۰-۹.]+$/.test((rows[0][0] || '').trim())) start = 1;   // text header line
+  }
+  $('ctxt').value = rows.slice(start).map(r => (r[col] || '').trim()).filter(Boolean).join('\n');
+  $('cres').textContent = ''; updatePrev();
+};
+$('cadd').onclick = () => {
+  const r = parseCodes($('ctxt').value);
+  if (!r.valid.length) { $('cres').textContent = 'Nothing new to add.'; return; }
+  const dt = $('cdate').value || todayStr();
+  r.valid.forEach((v, i) => records.push({ id: Date.now() + Math.random(), value: v, date: dt, time: timeAt(i) }));
+  sortRecords(); save(); render();
+  $('ctxt').value = ''; updatePrev();
+  const m = `Added ${r.valid.length} code${r.valid.length > 1 ? 's' : ''} to ${dt}` + (r.dup ? `, skipped ${r.dup} duplicate${r.dup > 1 ? 's' : ''}` : '') + (r.bad ? `, ${r.bad} invalid ignored` : '') + (inView(dt, spec()) ? '' : ' (not in the current view)');
+  $('cres').textContent = m; $('msg').textContent = m;
+};
+
+/* ---------- Statistics ---------- */
+const fmtc = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : n >= 1e4 ? Math.round(n / 1e3) + 'k' : n >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'k' : String(Math.round(n));
+function barsHtml(labels, vals, tips, color, vf, showVals) {
+  const mx = Math.max(...vals, 1);
+  return `<div class="bars">` + labels.map((l, i) =>
+    `<div class="bcol" data-tip="${esc(tips[i])}"><span class="bv">${showVals && vals[i] ? vf(vals[i]) : ''}</span><div class="bw"><div class="bar" style="height:${vals[i] / mx * 100}%;background:${color};${vals[i] ? '' : 'opacity:.2'}"></div></div><span class="bl">${esc(l)}</span></div>`).join('') +
+    `</div><div class="tip">Tap a bar for details</div>`;
+}
+const card = (t, inner, extra = '') => `<div class="card"><div class="row" style="align-items:center;justify-content:space-between"><h2>${t}</h2>${extra}</div>${inner}</div>`;
+const kpi = (l, v, sub = '') => `<div class="kpi"><div class="kl">${l}</div><div class="kv">${v}</div>${sub ? `<div class="ks">${esc(sub)}</div>` : ''}</div>`;
+
+function renderStats() {
+  const sp = spec(), rows = shown(), [t, st] = label();
+  $('stTitle').textContent = t + (st ? ' · ' + st : '');
+  const box = $('stBody');
+  if (!rows.length) { box.innerHTML = '<div class="card empty">No records in this period</div>'; return; }
+  const hasInv = Object.keys(inv).length > 0, seen = new Set();
+  const items = rows.map(r => { const k = recKey(r), m = has(k); let a = 0; if (m && !seen.has(k)) { seen.add(k); a = inv[k]; } return { r, a, m, mk: nameOf(r) || '' }; });
+  const total = items.reduce((s, x) => s + x.a, 0), matched = items.filter(x => x.m).length;
+
+  let dayList = [];
+  if (sp.set) dayList = [...sp.set].sort(); else for (let d = parse(sp.from), e = parse(sp.to); d <= e; d.setDate(d.getDate() + 1)) dayList.push(dateStr(d));
+  const gran = dayList.length === 1 ? 'hour' : dayList.length <= 92 ? 'day' : 'month';
+  let keys, labels, bkey;
+  if (gran === 'hour') { keys = [...Array(24).keys()].map(i => p2(i)); labels = keys.map(k => String(+k)); bkey = r => r.time.slice(0, 2); }
+  else if (gran === 'day') { keys = dayList; labels = keys.map(k => k.slice(8)); bkey = r => r.date; }
+  else { keys = [...new Set(dayList.map(d => d.slice(0, 7)))]; labels = keys.map(k => k.slice(5)); bkey = r => r.date.slice(0, 7); }
+  const idx = new Map(keys.map((k, i) => [k, i])), cnt = keys.map(() => 0), mny = keys.map(() => 0);
+  items.forEach(x => { const i = idx.get(bkey(x.r)); if (i !== undefined) { cnt[i]++; mny[i] += x.a; } });
+  const tipsC = keys.map((k, i) => `${gran === 'hour' ? k + ':00' : k} · ${cnt[i]} record${cnt[i] === 1 ? '' : 's'}`);
+  const tipsM = keys.map((k, i) => `${gran === 'hour' ? k + ':00' : k} · ${fmt(mny[i])}`);
+
+  const byDay = {}; rows.forEach(r => byDay[r.date] = (byDay[r.date] || 0) + 1);
+  const active = Object.keys(byDay).length, [bd, bc] = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0];
+  const hours = Array(24).fill(0); rows.forEach(r => hours[+r.time.slice(0, 2)]++);
+  const ph = hours.indexOf(Math.max(...hours));
+  const top = items.filter(x => x.m).sort((a, b) => b.a - a.a)[0];
+  let k = kpi('Records', rows.length, `${active} active day${active > 1 ? 's' : ''}`);
+  if (hasInv) k += kpi('Total money', fmt(total));
+  k += kpi('Avg per active day', (rows.length / active).toFixed(1));
+  if (hasInv) k += kpi('Avg money / invoice', matched ? fmt(total / matched) : '—', `${matched} with invoice data`);
+  k += kpi('Busiest day', bd, `${bc} record${bc > 1 ? 's' : ''}`);
+  k += kpi('Peak hour', `${p2(ph)}:00`, `${hours[ph]} record${hours[ph] > 1 ? 's' : ''}`);
+  if (hasInv && top) k += kpi('Largest invoice', fmt(top.a), '#' + top.r.value);
+  if (hasInv) k += kpi('No invoice data', rows.length - matched, `${Math.round((rows.length - matched) / rows.length * 100)}% of records`);
+
+  let html = `<div class="kgrid">${k}</div>` + card(`Records per ${gran}`, barsHtml(labels, cnt, tipsC, '#2563eb', String, labels.length <= 14));
+  if (hasInv) html += card(`Money per ${gran}`, barsHtml(labels, mny, tipsM, '#16a34a', fmtc, labels.length <= 10));
+
+  const mm = new Map();
+  items.forEach(x => { const n = x.mk || '(unknown)', o = mm.get(n) || { c: 0, m: 0 }; o.c++; o.m += x.a; mm.set(n, o); });
+  if (!(mm.size === 1 && mm.has('(unknown)'))) {
+    const list = [...mm.entries()].map(([n, o]) => ({ n, v: mktMetric === 'cnt' ? o.c : o.m })).sort((a, b) => b.v - a.v).slice(0, 10);
+    const mx = Math.max(...list.map(x => x.v), 1), color = mktMetric === 'cnt' ? '#2563eb' : '#16a34a';
+    const toggle = `<span class="seg2"><button data-m="cnt" class="${mktMetric === 'cnt' ? 'on' : ''}">Records</button>${hasInv ? `<button data-m="money" class="${mktMetric === 'money' ? 'on' : ''}">Money</button>` : ''}</span>`;
+    html += card('🏪 Top markets', list.map(x => `<div class="hrow"><div class="hl">${esc(x.n)}</div><div class="hbw"><div class="hb"><i style="width:${x.v / mx * 100}%;background:${color}"></i></div><div class="hv">${mktMetric === 'cnt' ? x.v : fmt(x.v)}</div></div></div>`).join(''), toggle);
+  }
+  if (dayList.length > 1) {
+    const names = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'], wd = Array(7).fill(0);
+    rows.forEach(r => wd[parse(r.date).getDay()]++);
+    const order = [...Array(7).keys()].map(i => (weekStart + i) % 7);
+    html += card('By weekday', barsHtml(order.map(i => names[i]), order.map(i => wd[i]), order.map(i => `${names[i]} · ${wd[i]} records`), '#8b5cf6', String, true));
+    html += card('By hour of day', barsHtml(hours.map((_, i) => String(i)), hours, hours.map((h, i) => `${p2(i)}:00 · ${h} records`), '#f59e0b', String, false));
+  }
+  box.innerHTML = html;
+  box.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { mktMetric = b.dataset.m; renderStats(); });
+  box.querySelectorAll('.bcol').forEach(c => c.onclick = () => { c.closest('.card').querySelector('.tip').textContent = c.dataset.tip; });
+}
+$('statBtn').onclick = () => { statsOpen = true; $('stats').classList.add('on'); renderStats(); };
+$('stBack').onclick = () => { statsOpen = false; $('stats').classList.remove('on'); };
+
+$('add').onclick = add;
+$('num').addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+render();
+</script>
+</body>
+</html>
