@@ -30,6 +30,8 @@ button.danger{background:var(--del)}
 button.rs{padding:8px 10px;font-size:13px}
 .badge{font-size:11px;background:var(--del);color:#fff;border-radius:9px;padding:1px 6px;margin-left:2px;vertical-align:top}
 .badge:empty{display:none}
+.dnote{margin-top:8px;padding:8px 10px;border-radius:10px;background:#fef3c7;color:#92400e;font-size:13px;display:none;justify-content:space-between;align-items:center;gap:8px}
+.dnote button{padding:4px 10px;font-size:12px;background:#92400e;color:#fff}
 .chips{display:flex;gap:6px;margin:0 0 10px;flex-wrap:wrap}
 .chips button{flex:1;padding:8px 6px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);font-size:14px;white-space:nowrap}
 .chips button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
@@ -93,11 +95,7 @@ hr{border:0;border-top:1px solid var(--bd);margin:12px 0}
       <input id="num" type="number" inputmode="decimal" step="any" placeholder="Enter a number" autofocus>
       <button id="add">Add</button>
     </div>
-    <div class="row" style="margin-top:8px;align-items:center">
-      <span class="sub" style="white-space:nowrap;margin:0">📅 Date</span>
-      <input type="date" id="addDate">
-      <button id="batchBtn" class="gray" style="white-space:nowrap">📥 Batch</button>
-    </div>
+    <div class="dnote" id="dateNote"><span id="dateNoteTxt"></span><button id="noteReset">Today</button></div>
     <div id="msg"></div>
   </div>
 
@@ -123,6 +121,10 @@ hr{border:0;border-top:1px solid var(--bd);margin:12px 0}
     <input id="uname" type="text" placeholder="Enter your name" autocomplete="name" style="margin:6px 0 12px">
     <label class="sub" for="wstart">Week starts on</label>
     <select id="wstart" style="margin:6px 0 12px"><option value="6">Saturday</option><option value="0">Sunday</option><option value="1">Monday</option></select>
+    <hr>
+    <div class="sub" style="margin-bottom:6px">📅 Date for new records (normally today)</div>
+    <div class="row" style="align-items:center"><input type="date" id="addDate"><button class="gray" id="dateReset" style="white-space:nowrap">Today</button></div>
+    <button class="gray" id="batchBtn" style="width:100%;margin:8px 0 12px">📥 Add codes in batch (file or paste)</button>
     <hr>
     <div class="sub" style="margin-bottom:6px">Import records from CSV (file exported from this app)</div>
     <input id="rfile" type="file" accept=".csv,text/csv,text/plain">
@@ -220,6 +222,16 @@ const key = v => { const s = digits(v).trim(); return /^\d+$/.test(s) ? s.replac
 const toNum = v => { const n = parseFloat(digits(v).replace(/٫/g, '.').replace(/[٬,\s]/g, '').replace(/[^\d.\-]/g, '')); return isNaN(n) ? null : n; };
 const fmt = n => Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
 const amtOf = r => { const k = key(r.value); return has(k) ? inv[k] : ''; };
+function setInfo(ks, a, nm) {   // ks[0] = main code; extra keys are aliases. Returns 'new' | 'upd' | 'same'
+  let res = 'same';
+  ks.forEach((x, i) => {
+    let nw = false, ch = false;
+    if (a !== null) { if (!has(x)) { inv[x] = a; nw = true; } else if (inv[x] !== a) { inv[x] = a; ch = true; } }
+    if (nm) { if (!invName[x]) { invName[x] = nm; nw = true; } else if (invName[x] !== nm) { invName[x] = nm; ch = true; } }
+    if (i === 0) res = nw ? 'new' : ch ? 'upd' : 'same';
+  });
+  return res;
+}
 const esc = t => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function parseCSV(text) {
   text = text.replace(/^\uFEFF/, '');
@@ -362,7 +374,7 @@ function add() {
   if (v === '' || isNaN(Number(v))) { $('msg').textContent = 'Please enter a valid number.'; return; }
   const k = key(v), ex = records.find(r => recKey(r) === k);
   if (ex) { $('msg').textContent = `⚠ ${v} is already recorded (${ex.date} ${ex.time}). Not added.`; $('num').select(); return; }
-  const now = new Date(), dt = $('addDate').value || todayStr();
+  const now = new Date(), dt = customDate || todayStr();
   records.push({ id: now.getTime() + Math.random(), value: v, date: dt, time: timeStr(now) });
   sortRecords(); save();
   $('num').value = '';
@@ -449,12 +461,14 @@ $('rfile').onchange = async e => {
   if (!rows.length) { $('rstat').textContent = 'The file is empty.'; return; }
   const H = rows[0].map(h => h.trim().toLowerCase());
   const iN = H.indexOf('number'), iD = H.indexOf('date'), iT = H.indexOf('time'), iM = H.indexOf('market'), iA = H.indexOf('amount');
-  if (iN < 0) { $('rstat').textContent = 'No "Number" column found. For a plain list of codes use 📥 Batch on the main screen.'; return; }
-  const active = new Set(records.map(recKey)); let ok = 0, dup = 0, bad = 0; const dates = new Set();
+  if (iN < 0) { $('rstat').textContent = 'No "Number" column found. For a plain list of codes use ⚙ Settings → 📥 Add codes in batch.'; return; }
+  const active = new Set(records.map(recKey)); let ok = 0, dup = 0, bad = 0, infoNew = 0, infoUpd = 0; const dates = new Set();
   rows.slice(1).forEach(r => {
     const v = digits((r[iN] || '').trim());
     if (v === '' || isNaN(Number(v))) { bad++; return; }
     const k = key(v);
+    const am = iA >= 0 ? toNum(r[iA] || '') : null, mk = iM >= 0 ? (r[iM] || '').trim() : '';
+    if (am !== null || mk) { const res = setInfo([k], am, mk); if (res === 'new') infoNew++; else if (res === 'upd') infoUpd++; }
     if (active.has(k)) { dup++; return; }
     active.add(k);
     const now = new Date();
@@ -462,15 +476,13 @@ $('rfile').onchange = async e => {
     const t = iT >= 0 && /^\d{2}:\d{2}:\d{2}$/.test((r[iT] || '').trim()) ? r[iT].trim() : timeStr(now);
     records.push({ id: now.getTime() + Math.random(), value: v, date: d, time: t });
     dates.add(d); ok++;
-    if (iA >= 0 && !has(k)) { const a = toNum(r[iA] || ''); if (a !== null && (r[iA] || '').trim() !== '') inv[k] = a; }
-    if (iM >= 0 && !invName[k] && (r[iM] || '').trim()) invName[k] = r[iM].trim();
   });
   records.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
   save();
   try { localStorage.setItem(IKEY, JSON.stringify(inv)); localStorage.setItem(NMKEY, JSON.stringify(invName)); } catch (e) {}
   istat();
   if (ok) { const d = [...dates].sort(); setView(d.length === 1 ? { t: 'range', from: d[0], to: d[0] } : { t: 'multi', dates: d }); } else render();
-  $('rstat').textContent = `Imported ${ok} record${ok === 1 ? '' : 's'}` + (dup ? `, skipped ${dup} duplicate${dup > 1 ? 's' : ''}` : '') + (bad ? `, ${bad} invalid row${bad > 1 ? 's' : ''} ignored` : '') + '.';
+  $('rstat').textContent = `Imported ${ok} record${ok === 1 ? '' : 's'}` + (dup ? `, ${dup} already recorded (not added again)` : '') + (infoNew || infoUpd ? `. Info: ${infoNew} added, ${infoUpd} replaced` : '') + (bad ? `, ${bad} invalid row${bad > 1 ? 's' : ''} ignored` : '') + '.';
 };
 $('mRange').onclick = () => setMode('range');
 $('mMulti').onclick = () => setMode('multi');
@@ -515,11 +527,13 @@ $('ifile').onchange = async e => {
   // Invoice number = 'پسووڵە' (the number you type), money = 'گشتی د_ع' (IQD total)
   let a = H.indexOf('پسووڵە');
   let b = H.indexOf('گشتی د_ع'); if (b < 0) b = H.findIndex(h => h.replace(/\s+/g, '') === 'گشتید_ع');
-  const auto = a >= 0 && b >= 0;
+  let auto = a >= 0 && b >= 0;
+  // Market name = the LAST 'بازرگان' column (the first one is just an ID)
+  let c = H.lastIndexOf('بازرگان');
+  const low = H.map(h => h.toLowerCase()), eN = low.indexOf('number'), eA = low.indexOf('amount');
+  if (!auto && eN >= 0 && eA >= 0) { a = eN; b = eA; c = low.indexOf('market'); auto = true; }   // CSV exported from this app
   if (a < 0) a = H.indexOf('invoiceNumberData'); if (a < 0) a = 0;
   if (b < 0) b = H.indexOf('گشتی'); if (b < 0) b = Math.max(0, H.length - 1);
-  // Market name = the LAST 'بازرگان' column (the first one is just an ID)
-  const c = H.lastIndexOf('بازرگان');
   $('cInv').value = a; $('cAmt').value = b; $('cName').value = c;
   if (auto) { doImport(); return; }   // known file layout: import straight away
   $('imap').style.display = '';
@@ -527,20 +541,32 @@ $('ifile').onchange = async e => {
 };
 $('idoit').onclick = doImport;
 function doImport() {
-  const ci = +$('cInv').value, ca = +$('cAmt').value, cn = +$('cName').value; let n = 0;
+  const ci = +$('cInv').value, ca = +$('cAmt').value, cn = +$('cName').value;
+  const orig = new Map(), allKeys = new Map();   // main code -> info before this import / all keys it wrote
   pending.forEach(r => {
-    const k = key(r[ci] || ''), a = toNum(r[ca] || '');
-    if (!(k && a !== null)) return;
-    const nm = cn >= 0 ? (r[cn] || '').trim() : '';
+    const k = key(r[ci] || ''); if (!k) return;
+    const a = toNum(r[ca] || ''), nm = cn >= 0 ? (r[cn] || '').trim() : '';
+    if (a === null && !nm) return;                       // nothing to update for this code
     const ks = [k];
     if (pendAlias >= 0) { const k2 = key(r[pendAlias] || ''); if (k2 && k2 !== k) ks.push(k2); }
-    ks.forEach(x => { inv[x] = a; if (nm) invName[x] = nm; });
-    n++;
+    if (!orig.has(k)) orig.set(k, { a: has(k) ? inv[k] : null, n: invName[k] || '' });
+    allKeys.set(k, ks);
+    setInfo(ks, a, nm);
   });
+  let added = 0, replaced = 0, same = 0; const touched = new Set();
+  orig.forEach((o, k) => {
+    const na = has(k) ? inv[k] : null, nn = invName[k] || '';
+    const isNew = (o.a === null && na !== null) || (!o.n && nn);
+    const changed = o.a !== na || o.n !== nn;
+    if (isNew) added++; else if (changed) replaced++; else same++;
+    if (changed) allKeys.get(k).forEach(x => touched.add(x));
+  });
+  const inList = records.filter(r => touched.has(recKey(r))).length;
   let saved = true;
   try { localStorage.setItem(IKEY, JSON.stringify(inv)); localStorage.setItem(NMKEY, JSON.stringify(invName)); } catch (e) { saved = false; }
   $('imap').style.display = 'none'; $('ifile').value = ''; pending = null;
-  istat(); $('istat').textContent += ` (${n} read from file)` + (saved ? '' : ' - too large to save on this device');
+  istat();
+  $('istat').textContent = `${orig.size} codes read: ${added} got new info, ${replaced} updated, ${same} unchanged. Records in your list updated: ${inList}.` + (saved ? '' : ' (too large to save on this device)');
   render();
 }
 $('iclear').onclick = () => {
@@ -588,8 +614,16 @@ $('wa').onclick = async () => {
 };
 
 /* ---------- date for new records, week start ---------- */
+let customDate = null;   // null = new records always go to today (reset on every launch)
+function updateDateNote() {
+  $('dateNote').style.display = customDate ? 'flex' : 'none';
+  $('dateNoteTxt').textContent = customDate ? `📅 New records are added to ${customDate}` : '';
+  $('addDate').style.borderColor = customDate ? '#f59e0b' : '';
+}
+function resetDate() { customDate = null; $('addDate').value = todayStr(); updateDateNote(); }
 $('addDate').value = todayStr();
-$('addDate').addEventListener('input', () => { $('addDate').style.borderColor = ($('addDate').value && $('addDate').value !== todayStr()) ? '#f59e0b' : ''; });
+$('addDate').addEventListener('input', () => { const v = $('addDate').value; customDate = v && v !== todayStr() ? v : null; updateDateNote(); });
+$('dateReset').onclick = $('noteReset').onclick = resetDate;
 $('wstart').value = String(weekStart);
 $('wstart').onchange = () => { weekStart = +$('wstart').value; try { localStorage.setItem(WKEY, String(weekStart)); } catch (e) {} render(); };
 
@@ -607,7 +641,7 @@ function parseCodes(text) {
 }
 function updatePrev() { const r = parseCodes($('ctxt').value); $('cprev').textContent = `${r.valid.length} new · ${r.dup} duplicate (will be skipped) · ${r.bad} invalid`; }
 const timeAt = i => { const n = new Date(); const t = Math.min(n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds() + i, 86399); return `${p2(Math.floor(t / 3600))}:${p2(Math.floor(t % 3600 / 60))}:${p2(t % 60)}`; };
-$('batchBtn').onclick = () => { $('cdate').value = $('addDate').value || todayStr(); $('cres').textContent = ''; updatePrev(); $('cov').classList.add('on'); };
+$('batchBtn').onclick = () => { $('cdate').value = customDate || todayStr(); $('cres').textContent = ''; updatePrev(); $('cov').classList.add('on'); };
 $('cclose').onclick = () => $('cov').classList.remove('on');
 $('ctxt').addEventListener('input', updatePrev);
 $('cfile').onchange = async e => {
